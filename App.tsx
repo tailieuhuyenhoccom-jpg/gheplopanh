@@ -3,11 +3,20 @@ import React, { useState } from 'react';
 import ImageUploader from './components/ImageUploader';
 import ResultDisplay from './components/ResultDisplay';
 
+const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
 const App: React.FC = () => {
     const [layer1, setLayer1] = useState<string | null>(null);
     const [layer2, setLayer2] = useState<string | null>(null);
     const [layer3, setLayer3] = useState<string | null>(null);
     const [layer4, setLayer4] = useState<string | null>(null);
+
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
 
     const layers = [layer1, layer2, layer3, layer4];
     const uploaderData = [
@@ -16,6 +25,18 @@ const App: React.FC = () => {
         { label: "Lớp thứ 3", image: layer3, setter: setLayer3 },
         { label: "Lớp thứ 4", image: layer4, setter: setLayer4 },
     ];
+
+    const handleOpenPreview = (dataUrl: string) => {
+        if (dataUrl) {
+            setPreviewImage(dataUrl);
+            setIsPreviewOpen(true);
+        }
+    };
+    
+    const handleClosePreview = () => {
+        setIsPreviewOpen(false);
+        setPreviewImage(null);
+    };
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 lg:p-8">
@@ -28,7 +49,7 @@ const App: React.FC = () => {
                 <main className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                     <div className="lg:sticky lg:top-8">
                         <h2 className="text-2xl font-semibold mb-4 text-center text-gray-300">Hình kết quả</h2>
-                        <ResultDisplay layers={layers} />
+                        <ResultDisplay layers={layers} onOpenPreview={handleOpenPreview} />
                     </div>
 
                     <div>
@@ -50,6 +71,35 @@ const App: React.FC = () => {
                     <p className="text-gray-500">Phát triển bởi Nguyễn Thành Đạt</p>
                 </footer>
             </div>
+
+            {isPreviewOpen && previewImage && (
+                <div 
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-modal-enter"
+                    onClick={handleClosePreview}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="preview-title"
+                >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleClosePreview(); }}
+                        className="absolute top-4 right-4 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-300 z-[51]"
+                        aria-label="Đóng xem trước"
+                    >
+                        <CloseIcon className="w-8 h-8" />
+                    </button>
+                    <div 
+                        className="relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                       <h2 id="preview-title" className="sr-only">Xem trước hình ảnh</h2>
+                       <img 
+                         src={previewImage} 
+                         alt="Xem trước ảnh ghép"
+                         className="object-contain max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl shadow-cyan-500/30"
+                       />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

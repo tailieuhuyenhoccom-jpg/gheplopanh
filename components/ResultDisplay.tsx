@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 
 interface ResultDisplayProps {
     layers: (string | null)[];
+    onOpenPreview: (dataUrl: string) => void;
 }
 
 const PhotoIcon: React.FC = () => (
@@ -16,16 +18,7 @@ const ExpandIcon: React.FC<{ className?: string }> = ({ className }) => (
     </svg>
 );
 
-const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-    </svg>
-);
-
-
-const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
-    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-    const [previewImage, setPreviewImage] = useState<string | null>(null);
+const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers, onOpenPreview }) => {
     const hasImages = layers.some(layer => layer !== null);
 
     const createCompositeImage = async (): Promise<string | null> => {
@@ -86,14 +79,8 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
     const handleOpenPreview = async () => {
         const dataUrl = await createCompositeImage();
         if (dataUrl) {
-            setPreviewImage(dataUrl);
-            setIsPreviewOpen(true);
+            onOpenPreview(dataUrl);
         }
-    };
-    
-    const handleClosePreview = () => {
-        setIsPreviewOpen(false);
-        setPreviewImage(null);
     };
 
     return (
@@ -134,35 +121,6 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
             >
                 Tải xuống ảnh ghép
             </button>
-
-            {isPreviewOpen && previewImage && (
-                <div 
-                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-modal-enter"
-                    onClick={handleClosePreview}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-labelledby="preview-title"
-                >
-                    <button
-                        onClick={(e) => { e.stopPropagation(); handleClosePreview(); }}
-                        className="absolute top-4 right-4 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-300 z-10"
-                        aria-label="Đóng xem trước"
-                    >
-                        <CloseIcon className="w-8 h-8" />
-                    </button>
-                    <div 
-                        className="relative"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                       <h2 id="preview-title" className="sr-only">Xem trước hình ảnh</h2>
-                       <img 
-                         src={previewImage} 
-                         alt="Xem trước ảnh ghép"
-                         className="object-contain max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl shadow-cyan-500/30"
-                       />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
