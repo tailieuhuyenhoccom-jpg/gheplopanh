@@ -1,5 +1,5 @@
 {
-  "name": "Trình ghép lớp ảnh",
+  "name": "Trình ghép lớp ảnh - V2",
   "description": "Một ứng dụng để ghép một hình ảnh từ bốn lớp riêng biệt. Người dùng có thể tải lên một hình ảnh cho mỗi lớp trong bốn lớp và kết quả cuối cùng được hiển thị dưới dạng một hình ảnh tổng hợp.",
   "requestFramePermissions": []
 }

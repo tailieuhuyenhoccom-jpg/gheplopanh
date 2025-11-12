@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface ResultDisplayProps {
     layers: (string | null)[];
@@ -10,26 +10,40 @@ const PhotoIcon: React.FC = () => (
     </svg>
 );
 
+const ExpandIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5 5" />
+    </svg>
+);
+
+const CloseIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+    </svg>
+);
+
 
 const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState<string | null>(null);
     const hasImages = layers.some(layer => layer !== null);
 
-    const handleDownload = async () => {
+    const createCompositeImage = async (): Promise<string | null> => {
         const validLayers = layers.filter((l): l is string => l !== null);
-        if (validLayers.length === 0) return;
+        if (validLayers.length === 0) return null;
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         if (!ctx) {
             alert('Failed to get canvas context.');
-            return;
+            return null;
         }
 
         try {
             const imagePromises = validLayers.map(src => {
                 return new Promise<HTMLImageElement>((resolve, reject) => {
                     const img = new Image();
-                    img.crossOrigin = 'anonymous'; // Prevent canvas tainting issues
+                    img.crossOrigin = 'anonymous';
                     img.onload = () => resolve(img);
                     img.onerror = (err) => reject(new Error(`Failed to load image: ${src.substring(0, 30)}...`));
                     img.src = src;
@@ -47,35 +61,64 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 });
 
-                const dataUrl = canvas.toDataURL('image/png');
-                const link = document.createElement('a');
-                link.href = dataUrl;
-                link.download = 'composite-image.png';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                return canvas.toDataURL('image/png');
             }
+            return null;
         } catch (error) {
             console.error("Error creating composite image:", error);
-            alert(`Could not download image. ${error instanceof Error ? error.message : 'An unknown error occurred.'}`);
+            alert(`Could not create image. ${error instanceof Error ? error.message : 'An unknown error occurred.'}`);
+            return null;
         }
+    };
+
+    const handleDownload = async () => {
+        const dataUrl = await createCompositeImage();
+        if (dataUrl) {
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'composite-image.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    };
+
+    const handleOpenPreview = async () => {
+        const dataUrl = await createCompositeImage();
+        if (dataUrl) {
+            setPreviewImage(dataUrl);
+            setIsPreviewOpen(true);
+        }
+    };
+    
+    const handleClosePreview = () => {
+        setIsPreviewOpen(false);
+        setPreviewImage(null);
     };
 
     return (
         <div className="flex flex-col items-center">
             <div className="aspect-square w-full max-w-xl mx-auto bg-gray-800 rounded-lg border-2 border-gray-700 flex items-center justify-center overflow-hidden relative shadow-lg shadow-cyan-500/10">
                 {hasImages ? (
-                    layers.map((layer, index) =>
-                        layer ? (
-                            <img
-                                key={index}
-                                src={layer}
-                                alt={`Layer ${index + 1}`}
-                                className="absolute top-0 left-0 w-full h-full object-cover"
-                                style={{ zIndex: index + 1 }}
-                            />
-                        ) : null
-                    )
+                    <>
+                        {layers.map((layer, index) =>
+                            layer ? (
+                                <img
+                                    key={index}
+                                    src={layer}
+                                    alt={`Layer ${index + 1}`}
+                                    className="absolute top-0 left-0 w-full h-full object-cover"
+                                />
+                            ) : null
+                        )}
+                        <button
+                            onClick={handleOpenPreview}
+                            className="absolute top-3 right-3 z-20 p-2 bg-black bg-opacity-60 rounded-full text-white hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-cyan-400 transition-all duration-300 animate-button-fade-in"
+                            aria-label="Xem trước toàn màn hình"
+                        >
+                            <ExpandIcon className="w-6 h-6" />
+                        </button>
+                    </>
                 ) : (
                     <div className="text-center text-gray-500">
                         <PhotoIcon />
@@ -91,6 +134,35 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ layers }) => {
             >
                 Tải xuống ảnh ghép
             </button>
+
+            {isPreviewOpen && previewImage && (
+                <div 
+                    className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-modal-enter"
+                    onClick={handleClosePreview}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="preview-title"
+                >
+                    <button
+                        onClick={(e) => { e.stopPropagation(); handleClosePreview(); }}
+                        className="absolute top-4 right-4 p-2 text-white bg-black bg-opacity-50 rounded-full hover:bg-opacity-75 focus:outline-none focus:ring-2 focus:ring-white transition-all duration-300 z-10"
+                        aria-label="Đóng xem trước"
+                    >
+                        <CloseIcon className="w-8 h-8" />
+                    </button>
+                    <div 
+                        className="relative"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                       <h2 id="preview-title" className="sr-only">Xem trước hình ảnh</h2>
+                       <img 
+                         src={previewImage} 
+                         alt="Xem trước ảnh ghép"
+                         className="object-contain max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl shadow-cyan-500/30"
+                       />
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

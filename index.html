@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,6 +8,20 @@
     <style>
         body {
             background-color: #111827; /* bg-gray-900 */
+        }
+        @keyframes modal-enter {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-modal-enter {
+            animation: modal-enter 0.2s ease-out forwards;
+        }
+        @keyframes button-fade-in {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-button-fade-in {
+            animation: button-fade-in 0.3s ease-out forwards;
         }
     </style>
 <script type="importmap">
